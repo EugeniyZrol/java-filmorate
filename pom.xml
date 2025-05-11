@@ -36,9 +36,9 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.eclipse.jdt</groupId>
-			<artifactId>junit</artifactId>
-			<version>3.3.0-v20070606-0010</version>
+			<groupId>au.com.dius.pact.consumer</groupId>
+			<artifactId>junit5</artifactId>
+			<version>4.7.0-beta.0</version>
 		</dependency>
 	</dependencies>
 
