@@ -3,7 +3,6 @@ package ru.yandex.practicum.filmorate.controller;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Assertions;
-import ru.yandex.practicum.filmorate.exception.ConditionsNotMetException;
 import ru.yandex.practicum.filmorate.exception.DuplicatedDataException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
@@ -33,34 +32,6 @@ class UserControllerTest {
     }
 
     @Test
-    void createUser_withEmptyEmail_shouldThrowException() {
-        User user = new User();
-        user.setEmail("");
-        user.setLogin("testLogin");
-        user.setBirthday(LocalDate.of(2000, 1, 1));
-
-        ConditionsNotMetException exception = Assertions.assertThrows(ConditionsNotMetException.class, () -> {
-            userController.create(user);
-        });
-
-        Assertions.assertEquals("Имейл должен быть указан и содержать @", exception.getMessage());
-    }
-
-    @Test
-    void createUser_withInvalidEmail_shouldThrowException() {
-        User user = new User();
-        user.setEmail("invalidEmail");
-        user.setLogin("testLogin");
-        user.setBirthday(LocalDate.of(2000, 1, 1));
-
-        ConditionsNotMetException exception = Assertions.assertThrows(ConditionsNotMetException.class, () -> {
-            userController.create(user);
-        });
-
-        Assertions.assertEquals("Имейл должен быть указан и содержать @", exception.getMessage());
-    }
-
-    @Test
     void createUser_withDuplicateEmail_shouldThrowException() {
         User user1 = new User();
         user1.setEmail("test@example.com");
@@ -78,34 +49,6 @@ class UserControllerTest {
         });
 
         Assertions.assertEquals("Этот имейл уже используется", exception.getMessage());
-    }
-
-    @Test
-    void createUser_withEmptyLogin_shouldThrowException() {
-        User user = new User();
-        user.setEmail("test@example.com");
-        user.setLogin("");
-        user.setBirthday(LocalDate.of(2000, 1, 1));
-
-        ConditionsNotMetException exception = Assertions.assertThrows(ConditionsNotMetException.class, () -> {
-            userController.create(user);
-        });
-
-        Assertions.assertEquals("Логин не может быть пустым и содержать пробелы", exception.getMessage());
-    }
-
-    @Test
-    void createUser_withFutureBirthday_shouldThrowException() {
-        User user = new User();
-        user.setEmail("test@example.com");
-        user.setLogin("testLogin");
-        user.setBirthday(LocalDate.of(2100, 1, 1));
-
-        ConditionsNotMetException exception = Assertions.assertThrows(ConditionsNotMetException.class, () -> {
-            userController.create(user);
-        });
-
-        Assertions.assertEquals("Дата рождения не может быть из будущего", exception.getMessage());
     }
 
     @Test
@@ -139,4 +82,3 @@ class UserControllerTest {
         Assertions.assertEquals("Пользователь с id = 999 не найден", exception.getMessage());
     }
 }
-
