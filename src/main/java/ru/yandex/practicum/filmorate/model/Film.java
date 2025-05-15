@@ -17,11 +17,9 @@ public class Film {
     @NotNull(groups = OnUpdate.class, message = "Id должен быть указан")
     private Long id;
 
-    @NotNull(groups = OnCreate.class, message = "Название фильма должно быть указано")
     @NotBlank(groups = OnCreate.class, message = "Название не может быть пустым")
     private String name;
 
-    @NotNull(groups = OnCreate.class, message = "Описание фильма должно быть указано")
     @NotBlank(groups = OnCreate.class, message = "Описание не может быть пустым")
     @Size(max = 200, groups = {OnCreate.class, OnUpdate.class}, message = "Максимальная длина описания - 200 символов")
     private String description;

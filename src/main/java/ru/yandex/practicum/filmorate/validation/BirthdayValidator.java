@@ -13,7 +13,7 @@ public class BirthdayValidator implements ConstraintValidator<Birthday, LocalDat
     @Override
     public boolean isValid(LocalDate date, ConstraintValidatorContext context) {
         if (date == null) {
-            return true; // или false, если Вы хотите, чтобы null считался недопустимым
+            return false;
         }
         return date.isBefore(LocalDate.now()) || date.isEqual(LocalDate.now());
     }

@@ -22,16 +22,13 @@ public class User {
 
     private String name;
 
-    @NonNull
     @Email(groups = OnCreate.class, message = "Имейл должен содержать @")
     @NotBlank(groups = {OnCreate.class, OnUpdate.class}, message = "Имейл должен быть указан")
     private String email;
 
-    @NonNull
     @NotBlank(groups = {OnCreate.class, OnUpdate.class}, message = "Логин не может быть пустым и содержать пробелы")
     private String login;
 
-    @NonNull
     @Birthday(groups = {OnUpdate.class, OnCreate.class}, message = "Дата рождения не может быть из будущего")
     private LocalDate birthday;
 }
