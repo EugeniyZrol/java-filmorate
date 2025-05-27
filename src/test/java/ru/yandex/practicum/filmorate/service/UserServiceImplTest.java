@@ -9,7 +9,6 @@ import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 
@@ -43,7 +42,24 @@ class UserServiceImplTest {
         user3.setId(3L);
         user3.setFriends(new HashSet<>());
 
-        when(userStorage.findAll()).thenReturn(Arrays.asList(user1, user2, user3));
+        // Настраиваем поведение findById
+        when(userStorage.findById(1L)).thenReturn(user1);
+        when(userStorage.findById(2L)).thenReturn(user2);
+        when(userStorage.findById(3L)).thenReturn(user3);
+    }
+
+    @Test
+    void findById_ShouldReturnUser() {
+        User foundUser = userStorage.findById(1L);
+
+        assertEquals(user1, foundUser);
+    }
+
+    @Test
+    void findById_UserNotFound_ShouldThrowNotFoundException() {
+        when(userStorage.findById(4L)).thenThrow(new NotFoundException("Пользователь с id = 4 не найден"));
+
+        assertThrows(NotFoundException.class, () -> userStorage.findById(4L));
     }
 
     @Test
@@ -56,6 +72,8 @@ class UserServiceImplTest {
 
     @Test
     void addFriends_UserNotFound_ShouldThrowNotFoundException() {
+        when(userStorage.findById(4L)).thenThrow(new NotFoundException("Пользователь с id = 4 не найден"));
+
         assertThrows(NotFoundException.class, () -> userService.addFriends(1L, 4L));
     }
 
@@ -84,6 +102,8 @@ class UserServiceImplTest {
 
     @Test
     void getCommonFriends_UserNotFound_ShouldThrowNotFoundException() {
+        when(userStorage.findById(4L)).thenThrow(new NotFoundException("Пользователь с id = 4 не найден"));
+
         assertThrows(NotFoundException.class, () -> userService.getCommonFriends(1L, 4L));
     }
 
@@ -101,6 +121,8 @@ class UserServiceImplTest {
 
     @Test
     void getFriends_UserNotFound_ShouldThrowNotFoundException() {
+        when(userStorage.findById(4L)).thenThrow(new NotFoundException("Пользователь с id = 4 не найден"));
+
         assertThrows(NotFoundException.class, () -> userService.getFriends(4L));
     }
 }
