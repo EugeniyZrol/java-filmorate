@@ -29,20 +29,23 @@ class FilmServiceImplTest {
     void addLike_FilmExists_UserExists_LikeAdded() {
         Long filmId = 1L;
         Long userId = 1L;
+
         User user = new User();
         user.setId(userId);
+
         Film film = new Film();
         film.setId(filmId);
         film.setLikes(new HashSet<>());
 
-        when(filmStorage.findAll()).thenReturn(Collections.singletonList(film));
-        when(userStorage.findAll()).thenReturn(Collections.singletonList(user));
+        when(filmStorage.findById(filmId)).thenReturn(film);
+        when(userStorage.findById(userId)).thenReturn(user);
 
         filmService.addLike(filmId, userId);
 
         assertTrue(film.getLikes().contains(userId));
-        verify(filmStorage).findAll();
-        verify(userStorage).findAll();
+
+        verify(filmStorage).findById(filmId);
+        verify(userStorage).findById(userId);
     }
 
     @Test
@@ -51,8 +54,9 @@ class FilmServiceImplTest {
         Long userId = 1L;
         User user = new User();
         user.setId(userId);
-        when(filmStorage.findAll()).thenReturn(Collections.emptyList());
-        when(userStorage.findAll()).thenReturn(Collections.singletonList(user));
+
+        when(filmStorage.findById(filmId)).thenThrow(new NotFoundException("Фильм с id " + filmId + " не найден"));
+        when(userStorage.findById(userId)).thenReturn(user);
 
         NotFoundException exception = assertThrows(NotFoundException.class, () -> filmService.addLike(filmId, userId));
         assertEquals("Фильм с id " + filmId + " не найден", exception.getMessage());
@@ -67,10 +71,12 @@ class FilmServiceImplTest {
         film.setId(filmId);
         film.setLikes(new HashSet<>());
 
-        when(filmStorage.findAll()).thenReturn(Collections.singletonList(film));
-        when(userStorage.findAll()).thenReturn(Collections.emptyList());
+        when(filmStorage.findById(filmId)).thenReturn(film);
+
+        when(userStorage.findById(userId)).thenThrow(new NotFoundException("Пользователь с id = " + userId + " не найден"));
 
         NotFoundException exception = assertThrows(NotFoundException.class, () -> filmService.addLike(filmId, userId));
+
         assertEquals("Пользователь с id = " + userId + " не найден", exception.getMessage());
     }
 
@@ -78,18 +84,23 @@ class FilmServiceImplTest {
     void removeLike_FilmExists_UserExists_LikeRemoved() {
         Long filmId = 1L;
         Long userId = 1L;
+
         User user = new User();
         user.setId(userId);
+
         Film film = new Film();
         film.setId(filmId);
-        film.setLikes(new HashSet<>(Collections.singletonList(userId)));
+        film.setLikes(new HashSet<>(Collections.singletonList(userId))); // Устанавливаем лайк
 
-        when(filmStorage.findAll()).thenReturn(Collections.singletonList(film));
-        when(userStorage.findAll()).thenReturn(Collections.singletonList(user));
+        when(filmStorage.findById(filmId)).thenReturn(film);
+        when(userStorage.findById(userId)).thenReturn(user);
 
         filmService.removeLike(filmId, userId);
 
         assertFalse(film.getLikes().contains(userId));
+
+        verify(filmStorage).findById(filmId);
+        verify(userStorage).findById(userId);
     }
 
     @Test
@@ -98,9 +109,14 @@ class FilmServiceImplTest {
         Long userId = 1L;
         User user = new User();
         user.setId(userId);
-        when(filmStorage.findAll()).thenReturn(Collections.emptyList());
-        when(userStorage.findAll()).thenReturn(Collections.singletonList(user));
 
+        // Настраиваем findById для пользователя
+        when(userStorage.findById(userId)).thenReturn(user);
+
+        // Настраиваем findById для фильма, чтобы выбрасывал исключение
+        when(filmStorage.findById(filmId)).thenThrow(new NotFoundException("Фильм с id " + filmId + " не найден"));
+
+        // Проверка, что исключение выбрасывается
         NotFoundException exception = assertThrows(NotFoundException.class, () -> filmService.removeLike(filmId, userId));
         assertEquals("Фильм с id " + filmId + " не найден", exception.getMessage());
     }
@@ -112,11 +128,15 @@ class FilmServiceImplTest {
 
         Film film = new Film();
         film.setId(filmId);
-        film.setLikes(new HashSet<>());
+        film.setLikes(new HashSet<>()); // Не содержит лайков
 
-        when(filmStorage.findAll()).thenReturn(Collections.singletonList(film));
-        when(userStorage.findAll()).thenReturn(Collections.emptyList());
+        // Настраиваем findById для фильма
+        when(filmStorage.findById(filmId)).thenReturn(film);
 
+        // Настраиваем findById для пользователя, чтобы выбрасывал исключение
+        when(userStorage.findById(userId)).thenThrow(new NotFoundException("Пользователь с id = " + userId + " не найден"));
+
+        // Проверка, что исключение выбрасывается
         NotFoundException exception = assertThrows(NotFoundException.class, () -> filmService.removeLike(filmId, userId));
         assertEquals("Пользователь с id = " + userId + " не найден", exception.getMessage());
     }

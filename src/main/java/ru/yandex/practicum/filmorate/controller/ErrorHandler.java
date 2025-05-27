@@ -1,6 +1,5 @@
 package ru.yandex.practicum.filmorate.controller;
 
-import lombok.Getter;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -9,6 +8,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import ru.yandex.practicum.filmorate.exception.ConditionsNotMetException;
 import ru.yandex.practicum.filmorate.exception.DuplicatedDataException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.model.ErrorResponse;
 
 @RestControllerAdvice
 public class ErrorHandler {
@@ -41,16 +41,5 @@ public class ErrorHandler {
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ErrorResponse handleGenericException(Throwable e) {
         return new ErrorResponse("Internal Server Error", "Произошла непредвиденная ошибка.");
-    }
-
-    @Getter
-    private static class ErrorResponse {
-        private final String error;
-        private final String description;
-
-        public ErrorResponse(String error, String description) {
-            this.error = error;
-            this.description = description;
-        }
     }
 }

@@ -6,7 +6,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.UserService;
-import ru.yandex.practicum.filmorate.storage.UserStorage;
 import ru.yandex.practicum.filmorate.validation.OnCreate;
 import ru.yandex.practicum.filmorate.validation.OnUpdate;
 import java.util.Collection;
@@ -15,37 +14,35 @@ import java.util.Collection;
 @RestController
 @RequestMapping("/users")
 public class UserController {
-    private final UserStorage userStorage;
     private final UserService userService;
 
     @Autowired
-    public UserController(UserStorage userStorage, UserService userService) {
-        this.userStorage = userStorage;
+    public UserController(UserService userService) {
         this.userService = userService;
     }
 
     @GetMapping
     public Collection<User> findAll() {
         log.info("Вызов метода findAll для получения всех пользователей.");
-        return userStorage.findAll();
+        return userService.findAll();
     }
 
     @PostMapping
     public User create(@Validated(OnCreate.class) @RequestBody User user) {
         log.info("Запрос на создание пользователя: {}", user);
-        User createUser = userStorage.create(user);
+        User createUser = userService.create(user);
         log.info("Пользователь успешно создан: {}", createUser);
         return createUser;
     }
 
     @PutMapping()
     public User update(@Validated(OnUpdate.class) @RequestBody User newUser) {
-        return userStorage.update(newUser);
+        return userService.update(newUser);
     }
 
     @DeleteMapping("/{userId}")
     public void delete(@RequestParam Long userId) {
-        userStorage.delete(userId);
+        userService.delete(userId);
     }
 
     @PutMapping("/{userId}/friends/{friendId}")

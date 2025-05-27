@@ -11,4 +11,12 @@ public interface UserService {
     Collection<User> getCommonFriends(Long userId1, Long userId2);
 
     Collection<User> getFriends(Long userId);
+
+    User update(User user);
+
+    User create(User user);
+
+    void delete(Long userId);
+
+    Collection<User> findAll();
 }

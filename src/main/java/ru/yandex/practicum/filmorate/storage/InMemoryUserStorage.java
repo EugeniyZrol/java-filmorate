@@ -6,9 +6,7 @@ import ru.yandex.practicum.filmorate.exception.DuplicatedDataException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 @Slf4j
 @Component
@@ -33,6 +31,7 @@ public class InMemoryUserStorage implements UserStorage {
 
     @Override
     public User update(User newUser) {
+
         if (!users.containsKey(newUser.getId())) {
             log.error("Пользователь с id = {} не найден", newUser.getId());
             throw new NotFoundException("Пользователь с id = " + newUser.getId() + " не найден");
@@ -40,11 +39,18 @@ public class InMemoryUserStorage implements UserStorage {
 
         User oldUser = users.get(newUser.getId());
 
-        if (users.values().stream().anyMatch(existingUser -> existingUser.getEmail().equals(newUser.getEmail())
-                && !existingUser.getId().equals(newUser.getId()))) {
+        Set<String> emailSet = new HashSet<>();
+        for (User existingUser : users.values()) {
+            if (!existingUser.getId().equals(newUser.getId())) {
+                emailSet.add(existingUser.getEmail());
+            }
+        }
+
+        if (emailSet.contains(newUser.getEmail())) {
             log.error("Этот имейл уже используется: {}", newUser.getEmail());
             throw new DuplicatedDataException("Этот имейл уже используется");
         }
+
         oldUser.setEmail(newUser.getEmail());
         log.info("Имейл успешно обновлен");
 
@@ -76,6 +82,15 @@ public class InMemoryUserStorage implements UserStorage {
     @Override
     public Collection<User> findAll() {
         return users.values();
+    }
+
+    @Override
+    public User findById(Long userId) {
+        User user = users.get(userId);
+        if (user == null) {
+            throw new NotFoundException("Фильм с id = " + userId + " не найден");
+        }
+        return user;
     }
 
     private long getNextId() {
