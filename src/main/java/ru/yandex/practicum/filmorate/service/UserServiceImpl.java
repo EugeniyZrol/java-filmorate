@@ -21,11 +21,19 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User create(User user) {
+        if (user.getName() == null || user.getName().isBlank()) {
+            user.setName(user.getLogin());
+            log.info("Имя для пользователя не указано, будет использован логин: {}", user.getLogin());
+        }
         return userStorage.create(user);
     }
 
     @Override
     public User update(User newUser) {
+        if (newUser.getName() == null || newUser.getName().isBlank()) {
+            newUser.setName(newUser.getLogin());
+            log.info("Имя для отображения не указано, будет использован логин: {}", newUser.getLogin());
+        }
         return userStorage.update(newUser);
     }
 

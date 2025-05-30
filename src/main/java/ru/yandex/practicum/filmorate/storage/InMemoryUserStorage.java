@@ -18,9 +18,6 @@ public class InMemoryUserStorage implements UserStorage {
         if (users.values().stream().anyMatch(existingUser -> existingUser.getEmail().equals(user.getEmail()))) {
             throw new DuplicatedDataException("Этот имейл уже используется");
         }
-        if (user.getName() == null || user.getName().isBlank()) {
-            user.setName(user.getLogin());
-        }
 
         log.info("Создание нового пользователя с логином: {}", user.getLogin());
         user.setId(getNextId());
@@ -57,12 +54,8 @@ public class InMemoryUserStorage implements UserStorage {
         oldUser.setLogin(newUser.getLogin());
         log.info("Логин успешно обновлен");
 
-        if (newUser.getName() == null || newUser.getName().isBlank()) {
-            oldUser.setName(newUser.getLogin());
-            log.info("Имя для отображения не указано, будет использован логин: {}", newUser.getLogin());
-        } else {
-            oldUser.setName(newUser.getName());
-        }
+        oldUser.setName(newUser.getName());
+        log.info("Имя пользователя обновлено");
 
         oldUser.setBirthday(newUser.getBirthday());
         log.info("Дата рождения обновлена");
