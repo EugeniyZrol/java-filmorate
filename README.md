@@ -37,3 +37,14 @@ Template repository for Filmorate project.
   GROUP BY f.film_id
   ORDER BY likes DESC
   LIMIT 5;
+  
+### Примеры запросов:
+-  Список общих друзей пользователя с ID = 1 и пользователя с ID = 2:
+  ```sql
+  SELECT f1.friend_id
+  FROM friendships f1
+  JOIN friendships f2 ON f1.friend_id = f2.friend_id
+  WHERE f1.user_id = 1 
+  AND f2.user_id = 2
+  AND f1.status = 'CONFIRMED'
+  AND f2.status = 'CONFIRMED';
