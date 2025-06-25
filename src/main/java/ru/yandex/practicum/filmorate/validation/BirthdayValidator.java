@@ -5,16 +5,13 @@ import jakarta.validation.ConstraintValidatorContext;
 import java.time.LocalDate;
 
 public class BirthdayValidator implements ConstraintValidator<Birthday, LocalDate> {
-
-    @Override
-    public void initialize(Birthday constraintAnnotation) {
-    }
+    private static final LocalDate MIN_DATE = LocalDate.of(1900, 1, 1);
 
     @Override
     public boolean isValid(LocalDate date, ConstraintValidatorContext context) {
         if (date == null) {
             return false;
         }
-        return date.isBefore(LocalDate.now()) || date.isEqual(LocalDate.now());
+        return !date.isAfter(LocalDate.now()) && !date.isBefore(MIN_DATE);
     }
 }

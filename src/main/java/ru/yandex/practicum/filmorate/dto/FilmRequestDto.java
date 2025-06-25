@@ -1,20 +1,20 @@
-package ru.yandex.practicum.filmorate.model;
+package ru.yandex.practicum.filmorate.dto;
 
 import jakarta.validation.constraints.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import ru.yandex.practicum.filmorate.validation.OnCreate;
 import ru.yandex.practicum.filmorate.validation.OnUpdate;
 import ru.yandex.practicum.filmorate.validation.ReleaseDate;
+
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 @Data
-@EqualsAndHashCode(of = {"id"})
 @NoArgsConstructor
-public class Film {
+@AllArgsConstructor
+public class FilmRequestDto {
     @Null(groups = OnCreate.class, message = "Id должен быть null при создании")
     @NotNull(groups = OnUpdate.class, message = "Id должен быть указан")
     private Long id;
@@ -35,8 +35,6 @@ public class Film {
     @Positive(message = "Продолжительность должна быть положительным числом")
     private int duration;
 
-    private MpaRating mpa;
-
-    private List<Genre> genres = new ArrayList<>();
-    private Set<Long> likes = new HashSet<>();
+    private MpaDto mpa;
+    private List<GenreDto> genres;
 }
