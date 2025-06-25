@@ -32,11 +32,11 @@ public class FilmDbStorage implements FilmStorage {
     private static final String SQL_UPDATE_FILM = "UPDATE films SET name = ?, description = ?, release_date = ?, duration = ?, mpa_id = ? WHERE film_id = ?";
     private static final String SQL_DELETE_FILM = "DELETE FROM films WHERE film_id = ?";
     private static final String SQL_FIND_ALL_FILMS = """
-            SELECT f.*, m.name AS mpa_name, m.description AS mpa_description 
+            SELECT f.*, m.name AS mpa_name, m.description AS mpa_description\s
             FROM films f LEFT JOIN mpa_ratings m ON f.mpa_id = m.mpa_id""";
     private static final String SQL_FIND_FILM_BY_ID = """
-            SELECT f.*, m.name AS mpa_name, m.description AS mpa_description 
-            FROM films f LEFT JOIN mpa_ratings m ON f.mpa_id = m.mpa_id 
+            SELECT f.*, m.name AS mpa_name, m.description AS mpa_description\s
+            FROM films f LEFT JOIN mpa_ratings m ON f.mpa_id = m.mpa_id\s
             WHERE f.film_id = ?""";
 
     // SQL-запросы для работы с жанрами
