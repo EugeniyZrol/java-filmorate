@@ -46,12 +46,12 @@ public class FilmDbStorage implements FilmStorage {
             WHERE fg.film_id = ?
             ORDER BY g.genre_id""";
     private static final String SQL_FIND_ALL_FILMS_WITH_GENRES = """
-            SELECT f.*, 
-                   m.name AS mpa_name, 
+            SELECT f.*,\s
+                   m.name AS mpa_name,\s
                    m.description AS mpa_description,
                    g.genre_id AS genre_id,
                    g.name AS genre_name
-            FROM films f 
+            FROM films f\s
             LEFT JOIN mpa_ratings m ON f.mpa_id = m.mpa_id
             LEFT JOIN film_genres fg ON f.film_id = fg.film_id
             LEFT JOIN genres g ON fg.genre_id = g.genre_id
