@@ -1,6 +1,5 @@
 package ru.yandex.practicum.filmorate.service;
 
-import jakarta.validation.Valid;
 import jakarta.validation.ValidationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,19 +24,25 @@ public class UserServiceImpl implements UserService {
     private final UserStorage userStorage;
 
     @Override
-    @Validated(OnCreate.class)
-    public UserResponse create(@Valid NewUserRequest request) {
+
+    public UserResponse create(@Validated(OnCreate.class) NewUserRequest request) {
         User user = UserMapper.mapFromCreateRequest(request);
         User createdUser = userStorage.create(user);
         return UserMapper.mapToResponse(createdUser);
     }
 
     @Override
-    @Validated(OnUpdate.class)
-    public UserResponse update(@Valid UpdateUserRequest request) {
+    public UserResponse update(@Validated(OnUpdate.class) UpdateUserRequest request) {
+        log.info("Обновление пользователя с ID: {}", request.getId());
         User existingUser = userStorage.findById(request.getId());
-        UserMapper.updateFromUpdateRequest(existingUser, request);
+
+        if (request.getEmail() != null) existingUser.setEmail(request.getEmail());
+        if (request.getLogin() != null) existingUser.setLogin(request.getLogin());
+        if (request.getName() != null) existingUser.setName(request.getName());
+        if (request.getBirthday() != null) existingUser.setBirthday(request.getBirthday());
+
         User updatedUser = userStorage.update(existingUser);
+        log.debug("Пользователь с ID {} успешно обновлен", updatedUser.getId());
         return UserMapper.mapToResponse(updatedUser);
     }
 
@@ -65,12 +70,16 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void removeFriend(Long userId, Long friendId) {
+        validateUsersExist(userId, friendId);
         userStorage.removeFriend(userId, friendId);
     }
 
     @Override
     public List<UserResponse> getFriends(Long userId) {
         Set<Long> friendIds = userStorage.getFriends(userId);
+        if (friendIds.isEmpty()) {
+            return Collections.emptyList();
+        }
         return friendIds.stream()
                 .map(userStorage::findById)
                 .map(UserMapper::mapToResponse)
@@ -78,28 +87,36 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public CommonFriendsResponse getCommonFriends(Long userId1, Long userId2) {
-        Set<Long> commonFriendIds = userStorage.getCommonFriends(userId1, userId2);
+    public List<UserResponse> getCommonFriends(Long userId1, Long userId2) {
+        validateUsersExist(userId1, userId2);
 
-        Set<UserResponse> commonFriends = commonFriendIds.stream()
-                .map(userStorage::findUserById)
-                .filter(Optional::isPresent)
-                .map(Optional::get)
+        Set<Long> friends1 = userStorage.getFriends(userId1);
+        Set<Long> friends2 = userStorage.getFriends(userId2);
+
+        Set<Long> commonFriends = new HashSet<>(friends1);
+        commonFriends.retainAll(friends2);
+
+        return commonFriends.stream()
+                .map(userStorage::findById)
                 .map(UserMapper::mapToResponse)
-                .collect(Collectors.toSet());
-
-        return new CommonFriendsResponse(userId1, userId2, commonFriends);
+                .collect(Collectors.toList());
     }
 
     private void validateFriendship(Long userId, Long friendId) {
         if (userId.equals(friendId)) {
-            throw new ValidationException("User cannot friend themselves");
+            throw new ValidationException("Пользователь не может добавить самого себя в друзья");
         }
         if (!userStorage.exists(userId)) {
-            throw new NotFoundException("User not found with id: " + userId);
+            throw new NotFoundException("Пользователь с id " + userId + " не найден");
         }
         if (!userStorage.exists(friendId)) {
-            throw new NotFoundException("User not found with id: " + friendId);
+            throw new NotFoundException("Пользователь с id " + friendId + " не найден");
+        }
+    }
+
+    private void validateUsersExist(Long userId1, Long userId2) {
+        if (!userStorage.exists(userId1) || !userStorage.exists(userId2)) {
+            throw new NotFoundException("Один или оба пользователя не найдены");
         }
     }
 }

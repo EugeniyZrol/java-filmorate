@@ -57,17 +57,16 @@ CREATE TABLE IF NOT EXISTS film_likes (
 CREATE TABLE IF NOT EXISTS friendships (
     user_id BIGINT NOT NULL,
     friend_id BIGINT NOT NULL,
-    is_confirmed BOOLEAN DEFAULT FALSE NOT NULL,
     PRIMARY KEY (user_id, friend_id),
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
     FOREIGN KEY (friend_id) REFERENCES users(user_id) ON DELETE CASCADE,
     CONSTRAINT chk_friendship CHECK (user_id != friend_id)
 );
 
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_users_login ON users(login);
-CREATE INDEX idx_friendships_user_id ON friendships(user_id);
-CREATE INDEX idx_friendships_friend_id ON friendships(friend_id);
-CREATE INDEX idx_films_mpa_id ON films(mpa_id);
-CREATE INDEX idx_film_genres_film_id ON film_genres(film_id);
-CREATE INDEX idx_film_likes_film_id ON film_likes(film_id);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_login ON users(login);
+CREATE INDEX IF NOT EXISTS idx_friendships_user_id ON friendships(user_id);
+CREATE INDEX IF NOT EXISTS idx_friendships_friend_id ON friendships(friend_id);
+CREATE INDEX IF NOT EXISTS idx_films_mpa_id ON films(mpa_id);
+CREATE INDEX IF NOT EXISTS idx_film_genres_film_id ON film_genres(film_id);
+CREATE INDEX IF NOT EXISTS idx_film_likes_film_id ON film_likes(film_id);

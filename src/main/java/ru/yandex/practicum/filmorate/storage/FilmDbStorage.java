@@ -31,9 +31,6 @@ public class FilmDbStorage implements FilmStorage {
     private static final String SQL_CREATE_FILM = "INSERT INTO films (name, description, release_date, duration, mpa_id) VALUES (?, ?, ?, ?, ?)";
     private static final String SQL_UPDATE_FILM = "UPDATE films SET name = ?, description = ?, release_date = ?, duration = ?, mpa_id = ? WHERE film_id = ?";
     private static final String SQL_DELETE_FILM = "DELETE FROM films WHERE film_id = ?";
-    private static final String SQL_FIND_ALL_FILMS = """
-            SELECT f.*, m.name AS mpa_name, m.description AS mpa_description\s
-            FROM films f LEFT JOIN mpa_ratings m ON f.mpa_id = m.mpa_id""";
     private static final String SQL_FIND_FILM_BY_ID = """
             SELECT f.*, m.name AS mpa_name, m.description AS mpa_description\s
             FROM films f LEFT JOIN mpa_ratings m ON f.mpa_id = m.mpa_id\s
@@ -48,11 +45,21 @@ public class FilmDbStorage implements FilmStorage {
             JOIN genres g ON fg.genre_id = g.genre_id\s
             WHERE fg.film_id = ?
             ORDER BY g.genre_id""";
+    private static final String SQL_FIND_ALL_FILMS_WITH_GENRES = """
+            SELECT f.*, 
+                   m.name AS mpa_name, 
+                   m.description AS mpa_description,
+                   g.genre_id AS genre_id,
+                   g.name AS genre_name
+            FROM films f 
+            LEFT JOIN mpa_ratings m ON f.mpa_id = m.mpa_id
+            LEFT JOIN film_genres fg ON f.film_id = fg.film_id
+            LEFT JOIN genres g ON fg.genre_id = g.genre_id
+            ORDER BY f.film_id, g.genre_id""";
 
     // SQL-запросы для работы с лайками
     private static final String SQL_ADD_LIKE =
-            "INSERT INTO film_likes (film_id, user_id) VALUES (?, ?) " +
-                    "ON CONFLICT (film_id, user_id) DO NOTHING";
+            "INSERT INTO film_likes (film_id, user_id) VALUES (?, ?)";
     private static final String SQL_REMOVE_LIKE =
             "DELETE FROM film_likes WHERE film_id = ? AND user_id = ?";
     private static final String SQL_GET_LIKES =
@@ -116,7 +123,7 @@ public class FilmDbStorage implements FilmStorage {
                 film.getId());
 
         updateFilmGenres(film);
-        log.info("Updated film with ID: {}", film.getId());
+        log.info("Фильм с ID обновлен: {}", film.getId());
         return findById(film.getId());
     }
 
@@ -125,37 +132,38 @@ public class FilmDbStorage implements FilmStorage {
     public void delete(Long filmId) {
         int deleted = jdbcTemplate.update(SQL_DELETE_FILM, filmId);
         if (deleted == 0) {
-            log.error("Failed to delete film with ID: {}", filmId);
-            throw new NotFoundException("Film not found with id: " + filmId);
+            log.error("Удаление фильма с id не удалось: {}", filmId);
+            throw new NotFoundException("Фильм с таким id не найден: " + filmId);
         }
-        log.info("Deleted film with ID: {}", filmId);
+        log.info("Фильм с ID удален: {}", filmId);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Collection<Film> findAll() {
         try {
-            Map<Long, Film> filmMap = new HashMap<>();
+            Map<Long, Film> filmMap = new LinkedHashMap<>();
 
-            jdbcTemplate.query(SQL_FIND_ALL_FILMS, rs -> {
+            jdbcTemplate.query(SQL_FIND_ALL_FILMS_WITH_GENRES, rs -> {
                 Long filmId = rs.getLong("film_id");
                 Film film = filmMap.computeIfAbsent(filmId, id -> {
                     try {
                         return filmRowMapper.mapRow(rs, 0);
                     } catch (SQLException e) {
-                        throw new DataAccessResourceFailureException("Failed to map film row", e);
+                        throw new DataAccessResourceFailureException("Не удалось преобразовать данные фильма", e);
                     }
                 });
-                try {
-                    film.getGenres().addAll(getFilmGenres(filmId));
-                } catch (DataAccessException e) {
-                    log.error("Failed to load genres for film {}", filmId, e);
+
+                int genreId = rs.getInt("genre_id");
+                if (!rs.wasNull()) {
+                    Genre genre = new Genre(genreId, rs.getString("genre_name"));
+                    film.getGenres().add(genre);
                 }
             });
 
             return new ArrayList<>(filmMap.values());
         } catch (DataAccessException e) {
-            throw new DataRetrievalFailureException("Failed to retrieve films", e);
+            throw new DataRetrievalFailureException("Не удалось извлечь фильм", e);
         }
     }
 
@@ -171,8 +179,8 @@ public class FilmDbStorage implements FilmStorage {
 
             return film;
         } catch (EmptyResultDataAccessException e) {
-            log.warn("Film not found with ID: {}", filmId);
-            throw new NotFoundException("Film not found with id: " + filmId);
+            log.warn("Фильм с таким id не найден: {}", filmId);
+            throw new NotFoundException("Фильм с таким id не найден: " + filmId);
         }
     }
 
@@ -181,13 +189,13 @@ public class FilmDbStorage implements FilmStorage {
     public void addLike(Long filmId, Long userId) {
         try {
             int updated = jdbcTemplate.update(
-                    "INSERT INTO film_likes (film_id, user_id) VALUES (?, ?)",
+                    SQL_ADD_LIKE,
                     filmId,
                     userId
             );
 
             if (updated == 0) {
-                throw new DuplicateKeyException("Duplicate like");
+                throw new DuplicateKeyException("Повторный лайк");
             }
         } catch (DuplicateKeyException e) {
             log.debug("Лайк уже существует: film={}, user={}", filmId, userId);
@@ -199,7 +207,7 @@ public class FilmDbStorage implements FilmStorage {
     @Transactional
     public void removeLike(Long filmId, Long userId) {
         jdbcTemplate.update(SQL_REMOVE_LIKE, filmId, userId);
-        log.debug("Like removed - film: {}, user: {}", filmId, userId);
+        log.debug("Лайк для фильма: {}, удален пользователем: {}", filmId, userId);
     }
 
     @Override

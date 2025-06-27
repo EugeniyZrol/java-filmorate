@@ -15,7 +15,6 @@ import ru.yandex.practicum.filmorate.model.User;
 
 import java.sql.Date;
 import java.sql.PreparedStatement;
-import java.time.LocalDate;
 import java.util.*;
 
 @Slf4j
@@ -49,15 +48,14 @@ public class UserDbStorage implements UserStorage {
     private static final String SQL_CHECK_FRIENDSHIP_EXISTS =
             "SELECT COUNT(*) FROM friendships WHERE user_id = ? AND friend_id = ?";
     private static final String SQL_GET_COMMON_FRIENDS =
-            "SELECT friend_id FROM friendships \n" +
-                    "WHERE user_id = ? AND friend_id IN (\n" +
-                    "    SELECT friend_id FROM friendships WHERE user_id = ?\n" +
-                    ")";
+            "SELECT f1.friend_id " +
+                    "FROM friendships f1 " +
+                    "JOIN friendships f2 ON f1.friend_id = f2.friend_id " +
+                    "WHERE f1.user_id = ? AND f2.user_id = ?";
 
     @Override
     @Transactional
     public User create(User user) {
-        validateUser(user);
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
         jdbcTemplate.update(connection -> {
@@ -70,7 +68,7 @@ public class UserDbStorage implements UserStorage {
         }, keyHolder);
 
         user.setId(Objects.requireNonNull(keyHolder.getKey()).longValue());
-        log.info("Created user with ID: {}", user.getId());
+        log.info("Создан пользователь с ID: {}", user.getId());
         return user;
     }
 
@@ -78,10 +76,8 @@ public class UserDbStorage implements UserStorage {
     @Transactional
     public User update(User user) {
         if (!exists(user.getId())) {
-            throw new NotFoundException("User not found with id: " + user.getId());
+            throw new NotFoundException("Пользователь с id " + user.getId() + " не найден");
         }
-
-        validateUser(user);
         jdbcTemplate.update(SQL_UPDATE_USER,
                 user.getEmail(),
                 user.getLogin(),
@@ -89,20 +85,19 @@ public class UserDbStorage implements UserStorage {
                 Date.valueOf(user.getBirthday()),
                 user.getId());
 
-        log.info("Updated user with ID: {}", user.getId());
+        log.info("Обновлен пользователь с ID: {}", user.getId());
         return user;
     }
 
     @Override
     @Transactional
     public void delete(Long id) {
-        // Сначала удаляем все связи дружбы
-        jdbcTemplate.update("DELETE FROM friendships WHERE user_id = ? OR friend_id = ?", id, id);
+        jdbcTemplate.update(SQL_REMOVE_FRIEND, id, id);
         int deleted = jdbcTemplate.update(SQL_DELETE_USER, id);
         if (deleted == 0) {
-            throw new NotFoundException("User not found with id: " + id);
+            throw new NotFoundException("Пользователь с id " + id + " не найден");
         }
-        log.info("Deleted user with ID: {}", id);
+        log.info("Удален пользователь с ID: {}", id);
     }
 
     @Override
@@ -111,7 +106,7 @@ public class UserDbStorage implements UserStorage {
         try {
             return jdbcTemplate.queryForObject(SQL_FIND_USER_BY_ID, userRowMapper, id);
         } catch (EmptyResultDataAccessException e) {
-            throw new NotFoundException("User not found with id: " + id);
+            throw new NotFoundException("Пользователь с id " + id + " не найден");
         }
     }
 
@@ -124,43 +119,46 @@ public class UserDbStorage implements UserStorage {
     @Override
     @Transactional
     public void addFriend(Long userId, Long friendId) {
-        validateFriendship(userId, friendId);
-
-        if (friendshipExists(userId, friendId)) {
-            throw new ValidationException("Friendship already exists");
+        if (!friendshipExists(userId, friendId)) {
+            jdbcTemplate.update(SQL_ADD_FRIEND, userId, friendId);
+            log.info("Добавлена односторонняя дружба: {} -> {}", userId, friendId);
+        } else {
+            log.info("Дружба уже существует: {} -> {}", userId, friendId);
         }
-
-        jdbcTemplate.update(SQL_ADD_FRIEND, userId, friendId);
-        log.info("Added friendship: {} -> {}", userId, friendId);
     }
 
     @Override
     @Transactional
     public void removeFriend(Long userId, Long friendId) {
-        validateUsersExist(userId, friendId);
         jdbcTemplate.update(SQL_REMOVE_FRIEND, userId, friendId);
-        log.info("Attempted to remove friendship: {} -> {}", userId, friendId);
+        log.info("Попытка удаления дружбы: {} -> {}", userId, friendId);
     }
 
     @Override
-    @Transactional(readOnly = true)
     public Set<Long> getFriends(Long userId) {
-        return new HashSet<>(jdbcTemplate.queryForList(SQL_GET_FRIENDS, Long.class, userId));
+        try {
+            return new HashSet<>(jdbcTemplate.queryForList(
+                    SQL_GET_FRIENDS,
+                    Long.class,
+                    userId
+            ));
+        } catch (EmptyResultDataAccessException e) {
+            return Collections.emptySet();
+        }
     }
 
     @Override
     public Set<Long> getCommonFriends(Long userId1, Long userId2) {
-        String sql = "SELECT f1.friend_id " +
-                "FROM friendships f1 " +
-                "JOIN friendships f2 ON f1.friend_id = f2.friend_id " +
-                "WHERE f1.user_id = ? AND f2.user_id = ?";
-
-        return new HashSet<>(jdbcTemplate.queryForList(
-                sql,
-                Long.class,
-                userId1,
-                userId2
-        ));
+        try {
+            return new HashSet<>(jdbcTemplate.queryForList(
+                    SQL_GET_COMMON_FRIENDS,
+                    Long.class,
+                    userId1,
+                    userId2
+            ));
+        } catch (EmptyResultDataAccessException e) {
+            return Collections.emptySet();
+        }
     }
 
     @Override
@@ -185,35 +183,7 @@ public class UserDbStorage implements UserStorage {
         return jdbcTemplate.queryForObject(
                 SQL_CHECK_FRIENDSHIP_EXISTS,
                 Integer.class,
-                userId,
-                friendId
+                userId, friendId
         ) > 0;
-    }
-
-    private void validateUser(User user) {
-        if (user.getEmail() == null || !user.getEmail().contains("@")) {
-            throw new ValidationException("Invalid email format");
-        }
-        if (user.getLogin() == null || user.getLogin().isBlank() || user.getLogin().contains(" ")) {
-            throw new ValidationException("Login cannot be empty or contain spaces");
-        }
-        if (user.getBirthday().isAfter(LocalDate.now())) {
-            throw new ValidationException("Birthday cannot be in the future");
-        }
-    }
-
-    private void validateFriendship(Long userId, Long friendId) {
-        if (userId.equals(friendId)) {
-            throw new ValidationException("User cannot friend themselves");
-        }
-        if (!exists(userId) || !exists(friendId)) {
-            throw new NotFoundException("One or both users not found");
-        }
-    }
-
-    private void validateUsersExist(Long userId1, Long userId2) {
-        if (!exists(userId1) || !exists(userId2)) {
-            throw new NotFoundException("One or both users not found");
-        }
     }
 }

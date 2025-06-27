@@ -1,7 +1,6 @@
 package ru.yandex.practicum.filmorate.mapper;
 
 import ru.yandex.practicum.filmorate.dto.NewUserRequest;
-import ru.yandex.practicum.filmorate.dto.UpdateUserRequest;
 import ru.yandex.practicum.filmorate.dto.UserResponse;
 import ru.yandex.practicum.filmorate.model.User;
 
@@ -29,30 +28,16 @@ public final class UserMapper {
         response.setLogin(user.getLogin());
         response.setName(user.getName());
         response.setBirthday(user.getBirthday());
+        response.setFriends(user.getFriends() == null ? Collections.emptySet() : user.getFriends());
         return response;
     }
 
-    public static void updateFromUpdateRequest(User user, UpdateUserRequest request) {
-        if (request.getEmail() != null) {
-            user.setEmail(request.getEmail());
-        }
-        if (request.getLogin() != null) {
-            user.setLogin(request.getLogin());
-        }
-        if (request.getName() != null) {
-            user.setName(request.getName());
-        }
-        if (request.getBirthday() != null) {
-            user.setBirthday(request.getBirthday());
-        }
-    }
-
     public static List<UserResponse> mapToResponseList(Collection<User> users) {
-        if (users == null) {
+        if (users == null || users.isEmpty()) {
             return Collections.emptyList();
         }
 
-        List<UserResponse> result = new ArrayList<>();
+        List<UserResponse> result = new ArrayList<>(users.size());
         for (User user : users) {
             result.add(mapToResponse(user));
         }

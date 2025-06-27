@@ -12,10 +12,7 @@ import ru.yandex.practicum.filmorate.service.UserService;
 import ru.yandex.practicum.filmorate.validation.OnCreate;
 import ru.yandex.practicum.filmorate.validation.OnUpdate;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 @Slf4j
 @RestController
@@ -74,20 +71,27 @@ public class UserController {
 
     @GetMapping("/{userId}/friends")
     public ResponseEntity<?> getFriends(@PathVariable Long userId) {
+        log.info("GET /users/{}/friends - Получение списка друзей", userId);
         try {
             userService.getUserById(userId);
-            return ResponseEntity.ok(userService.getFriends(userId));
+            List<UserResponse> friends = userService.getFriends(userId);
+            return ResponseEntity.ok(friends);
         } catch (NotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Collections.singletonMap("message", e.getMessage()));
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .body(Map.of(
+                            "error", "Not Found",
+                            "message", e.getMessage()
+                    ));
         }
     }
 
     @GetMapping("/{userId}/friends/common/{otherId}")
-    public List<UserResponse> getCommonFriends(@PathVariable Long userId,
-                                               @PathVariable Long otherId) {
+    public List<UserResponse> getCommonFriends(
+            @PathVariable Long userId,
+            @PathVariable Long otherId
+    ) {
         log.info("GET /users/{}/friends/common/{} - Поиск общих друзей", userId, otherId);
-        CommonFriendsResponse response = userService.getCommonFriends(userId, otherId);
-        return new ArrayList<>(response.getCommonFriends());
+        return userService.getCommonFriends(userId, otherId);
     }
 }

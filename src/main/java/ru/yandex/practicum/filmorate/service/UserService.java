@@ -28,5 +28,5 @@ public interface UserService {
 
     List<UserResponse> getFriends(Long userId);
 
-    CommonFriendsResponse getCommonFriends(Long userId1, Long userId2);
+    List<UserResponse> getCommonFriends(Long userId1, Long userId2);
 }

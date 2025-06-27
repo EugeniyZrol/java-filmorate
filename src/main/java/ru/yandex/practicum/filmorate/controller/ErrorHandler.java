@@ -29,13 +29,6 @@ public class ErrorHandler {
         return new ErrorResponse("Ошибка валидации", e.getMessage());
     }
 
-    @ExceptionHandler(Throwable.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public ErrorResponse handleGenericException(Throwable e) {
-        log.error("Unhandled exception occurred: {}", e.getClass().getName(), e);
-        return new ErrorResponse("Internal Server Error", "Произошла непредвиденная ошибка.");
-    }
-
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleMethodArgumentNotValid(MethodArgumentNotValidException e) {
@@ -82,5 +75,12 @@ public class ErrorHandler {
         return ResponseEntity
                 .badRequest()
                 .body(new ErrorResponse("Bad Request", "Ошибка целостности данных"));
+    }
+
+    @ExceptionHandler(Throwable.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ErrorResponse handleGenericException(Throwable e) {
+        log.error("Unhandled exception occurred: {}", e.getClass().getName(), e);
+        return new ErrorResponse("Internal Server Error", "Произошла непредвиденная ошибка.");
     }
 }
