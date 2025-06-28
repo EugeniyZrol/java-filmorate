@@ -2,6 +2,8 @@ package ru.yandex.practicum.filmorate.storage;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -44,6 +46,9 @@ public class UserDbStorage implements UserStorage {
             "DELETE FROM friendships WHERE user_id = ? AND friend_id = ?";
     private static final String SQL_GET_FRIENDS =
             "SELECT friend_id FROM friendships WHERE user_id = ?";
+    private static final String SQL_FRIENDSHIPS =
+            "SELECT user_id, friend_id FROM friendships " +
+                    "WHERE user_id IN (SELECT user_id FROM users)";
     private static final String SQL_CHECK_FRIENDSHIP_EXISTS =
             "SELECT COUNT(*) FROM friendships WHERE user_id = ? AND friend_id = ?";
     private static final String SQL_GET_COMMON_FRIENDS =
@@ -112,8 +117,37 @@ public class UserDbStorage implements UserStorage {
     @Override
     @Transactional(readOnly = true)
     public Collection<User> findAll() {
-        return jdbcTemplate.query(SQL_FIND_ALL_USERS, userRowMapper);
+        try {
+            List<User> users = jdbcTemplate.query(SQL_FIND_ALL_USERS, userRowMapper);
+
+            if (users.isEmpty()) {
+                return users;
+            }
+
+            Map<Long, Set<Long>> friendsMap = jdbcTemplate.query(
+                    SQL_FRIENDSHIPS,
+                    rs -> {
+                        Map<Long, Set<Long>> map = new HashMap<>();
+                        while (rs.next()) {
+                            Long userId = rs.getLong("user_id");
+                            Long friendId = rs.getLong("friend_id");
+                            map.computeIfAbsent(userId, k -> new HashSet<>()).add(friendId);
+                        }
+                        return map;
+                    }
+            );
+
+            users.forEach(user -> {
+                Set<Long> friends = friendsMap.getOrDefault(user.getId(), Collections.emptySet());
+                user.setFriends(friends);
+            });
+
+            return users;
+        } catch (DataAccessException e) {
+            throw new DataRetrievalFailureException("Ошибка при получении пользователей", e);
+        }
     }
+
 
     @Override
     @Transactional

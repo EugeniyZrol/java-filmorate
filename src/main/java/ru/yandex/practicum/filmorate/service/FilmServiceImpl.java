@@ -51,7 +51,6 @@ public class FilmServiceImpl implements FilmService {
     @Transactional
     public FilmResponseDto create(@Validated(OnCreate.class) FilmRequestDto filmDto) {
         log.debug("Создание нового фильма: {}", filmDto);
-        validateFilmForCreate(filmDto);
         Film newFilm = prepareFilmFromDto(filmDto);
         Film savedFilm = filmStorage.create(newFilm);
         enrichFilmWithRelations(savedFilm);
@@ -68,13 +67,6 @@ public class FilmServiceImpl implements FilmService {
         Film updatedFilm = filmStorage.update(existingFilm);
         log.info("Фильм с ID {} успешно обновлен", updatedFilm.getId());
         return filmMapper.toDto(updatedFilm);
-    }
-
-    private void validateFilmForCreate(FilmRequestDto filmDto) {
-        if (filmDto.getId() != null) {
-            log.warn("Попытка создания фильма с указанным ID");
-            throw new ValidationException("ID должен быть null при создании");
-        }
     }
 
     private Film prepareFilmFromDto(FilmRequestDto filmDto) {

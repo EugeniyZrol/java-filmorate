@@ -66,15 +66,10 @@ public class ErrorHandler {
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
-        if (ex.getMessage().contains("FILM_GENRES FOREIGN KEY(GENRE_ID)")) {
-            return ResponseEntity
-                    .status(HttpStatus.NOT_FOUND)  // Возвращаем 404 вместо 400
-                    .body(new ErrorResponse("Not Found", "Указанный жанр не существует"));
-        }
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(DataIntegrityViolationException e) {
         return ResponseEntity
-                .badRequest()
-                .body(new ErrorResponse("Bad Request", "Ошибка целостности данных"));
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse("Bad Request", e.getMessage()));
     }
 
     @ExceptionHandler(Throwable.class)
