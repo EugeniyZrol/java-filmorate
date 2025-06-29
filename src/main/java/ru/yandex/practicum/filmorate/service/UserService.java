@@ -1,22 +1,32 @@
 package ru.yandex.practicum.filmorate.service;
 
-import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.dto.*;
 import java.util.Collection;
+import java.util.List;
+
+import jakarta.validation.Valid;
+import org.springframework.validation.annotation.Validated;
+import ru.yandex.practicum.filmorate.validation.OnCreate;
+import ru.yandex.practicum.filmorate.validation.OnUpdate;
 
 public interface UserService {
-    void addFriends(Long userId, Long friendId);
+    @Validated(OnCreate.class)
+    UserResponse create(@Valid NewUserRequest request);
 
-    void removeFriend(Long userId, Long friendId);
-
-    Collection<User> getCommonFriends(Long userId1, Long userId2);
-
-    Collection<User> getFriends(Long userId);
-
-    User update(User user);
-
-    User create(User user);
+    @Validated(OnUpdate.class)
+    UserResponse update(@Valid UpdateUserRequest request);
 
     void delete(Long userId);
 
-    Collection<User> findAll();
+    UserResponse getUserById(Long userId);
+
+    Collection<UserResponse> findAll();
+
+    void addFriend(Long userId, Long friendId);
+
+    void removeFriend(Long userId, Long friendId);
+
+    List<UserResponse> getFriends(Long userId);
+
+    List<UserResponse> getCommonFriends(Long userId1, Long userId2);
 }

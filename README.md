@@ -31,9 +31,25 @@ Template repository for Filmorate project.
 ### Примеры запросов:
 - Топ-5 популярных фильмов:
   ```sql
-  SELECT f.name, COUNT(fl.user_id) AS likes 
+  SELECT 
+    f.film_id,
+    f.name AS film_title,
+    COUNT(fl.user_id) AS likes_count,
+    m.name AS mpa_rating
   FROM films f
   LEFT JOIN film_likes fl ON f.film_id = fl.film_id
-  GROUP BY f.film_id
-  ORDER BY likes DESC
+  LEFT JOIN mpa_ratings m ON f.mpa_id = m.mpa_id
+  GROUP BY f.film_id, f.name, m.name
+  ORDER BY likes_count DESC, film_title ASC
   LIMIT 5;
+  
+### Примеры запросов:
+-  Список общих друзей пользователя с ID = 1 и пользователя с ID = 2:
+  ```sql
+  SELECT f1.friend_id
+  FROM friendships f1
+  JOIN friendships f2 ON f1.friend_id = f2.friend_id
+  WHERE f1.user_id = 1 
+  AND f2.user_id = 2
+  AND f1.status = 'CONFIRMED'
+  AND f2.status = 'CONFIRMED';
