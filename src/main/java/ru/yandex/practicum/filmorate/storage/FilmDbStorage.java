@@ -87,13 +87,16 @@ public class FilmDbStorage implements FilmStorage {
     private static final String SQL_GET_LIKES =
             "SELECT user_id FROM film_likes WHERE film_id = ?";
     private static final String SQL_GET_TOP_FILMS = """
-            SELECT f.*, m.name AS mpa_name, m.description AS mpa_description
-            FROM films f
-            LEFT JOIN mpa_ratings m ON f.mpa_id = m.mpa_id
-            LEFT JOIN film_likes fl ON f.film_id = fl.film_id
-            GROUP BY f.film_id, m.mpa_id
-            ORDER BY COUNT(fl.user_id) DESC
-            LIMIT ?""";
+    SELECT f.*, m.name AS mpa_name, m.description AS mpa_description
+    FROM films f
+    LEFT JOIN mpa_ratings m ON f.mpa_id = m.mpa_id
+    LEFT JOIN film_likes fl ON f.film_id = fl.film_id
+    LEFT JOIN film_genres fg ON f.film_id = fg.film_id
+    WHERE (? IS NULL OR fg.genre_id = ?)
+    AND (? IS NULL OR EXTRACT(YEAR FROM f.release_date) = ?)
+    GROUP BY f.film_id, m.mpa_id
+    ORDER BY COUNT(fl.user_id) DESC
+    LIMIT ?""";
 
     @Override
     public Film create(Film film) {
@@ -240,8 +243,11 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Film> findTopFilms(int count) {
-        return jdbcTemplate.query(SQL_GET_TOP_FILMS, filmRowMapper, count);
+    public List<Film> findTopFilms(int count, Integer genreId, Integer year) {
+        return jdbcTemplate.query(SQL_GET_TOP_FILMS, filmRowMapper,
+                genreId, genreId,
+                year, year,
+                count);
     }
 
     private void updateFilmGenres(Film film) {

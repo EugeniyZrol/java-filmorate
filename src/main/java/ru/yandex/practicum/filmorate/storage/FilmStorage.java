@@ -23,7 +23,7 @@ public interface FilmStorage {
 
     Set<Long> getLikes(Long filmId);
 
-    List<Film> findTopFilms(int count);
+    List<Film> findTopFilms(int count, Integer genreId, Integer year);
 
     List<Film> findCommonFilms(Long userId, Long friendId);
 }
