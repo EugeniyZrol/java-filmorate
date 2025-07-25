@@ -214,10 +214,10 @@ public class FilmServiceImpl implements FilmService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<FilmResponseDto> getTopFilms(int count) {
-        log.debug("Получение топ-{} фильмов", count);
+    public List<FilmResponseDto> getTopFilms(int count, Integer genreId, Integer year) {
+        log.debug("Получение топ-{} фильмов по жанру {} и году {}", count, genreId, year);
         try {
-            List<FilmResponseDto> topFilms = filmStorage.findTopFilms(count).stream()
+            List<FilmResponseDto> topFilms = filmStorage.findTopFilms(count, genreId, year).stream()
                     .map(filmMapper::toDto)
                     .collect(Collectors.toList());
             log.info("Возвращено {} топовых фильмов", topFilms.size());

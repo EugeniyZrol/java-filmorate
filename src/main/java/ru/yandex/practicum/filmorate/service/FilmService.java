@@ -19,7 +19,7 @@ public interface FilmService {
 
     void removeLike(Long filmId, Long userId);
 
-    List<FilmResponseDto> getTopFilms(int count);
+    List<FilmResponseDto> getTopFilms(int count, Integer genreId, Integer year);
 
     FilmResponseDto getFilmById(Long id);
 
