@@ -227,4 +227,22 @@ public class FilmServiceImpl implements FilmService {
             throw new DataRetrievalFailureException("Не удалось получить топовые фильмы", e);
         }
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<FilmResponseDto> getCommonFilms(Long userId, Long friendId) {
+        log.debug("Получение общих фильмов пользователей: userId={}, friendId={}", userId, friendId);
+
+        // Проверка существования пользователей
+        userStorage.findById(userId);
+        userStorage.findById(friendId);
+
+        List<Film> commonFilms = filmStorage.findCommonFilms(userId, friendId);
+        List<FilmResponseDto> result = commonFilms.stream()
+                .map(filmMapper::toDto)
+                .collect(Collectors.toList());
+
+        log.info("Найдено {} общих фильмов", result.size());
+        return result;
+    }
 }

@@ -22,4 +22,6 @@ public interface FilmService {
     List<FilmResponseDto> getTopFilms(int count);
 
     FilmResponseDto getFilmById(Long id);
+
+    List<FilmResponseDto> getCommonFilms(Long userId, Long friendId);
 }

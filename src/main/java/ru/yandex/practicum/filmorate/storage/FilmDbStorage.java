@@ -32,26 +32,48 @@ public class FilmDbStorage implements FilmStorage {
     private static final String SQL_UPDATE_FILM = "UPDATE films SET name = ?, description = ?, release_date = ?, duration = ?, mpa_id = ? WHERE film_id = ?";
     private static final String SQL_DELETE_FILM = "DELETE FROM films WHERE film_id = ?";
     private static final String SQL_FIND_FILM_BY_ID = """
-            SELECT f.*, m.name AS mpa_name, m.description AS mpa_description\s
-            FROM films f LEFT JOIN mpa_ratings m ON f.mpa_id = m.mpa_id\s
+            SELECT f.*, m.name AS mpa_name, m.description AS mpa_description
+            FROM films f LEFT JOIN mpa_ratings m ON f.mpa_id = m.mpa_id
             WHERE f.film_id = ?""";
+    private static final String SQL_FIND_COMMON_FILMS = """
+        WITH common_films AS (
+            SELECT fl1.film_id
+            FROM film_likes fl1
+            JOIN film_likes fl2 ON fl1.film_id = fl2.film_id
+            WHERE fl1.user_id = ? AND fl2.user_id = ?
+        )
+        SELECT f.*,
+               m.name AS mpa_name,
+               m.description AS mpa_description,
+               g.genre_id AS genre_id,
+               g.name AS genre_name
+        FROM films f
+        LEFT JOIN mpa_ratings m ON f.mpa_id = m.mpa_id
+        LEFT JOIN film_genres fg ON f.film_id = fg.film_id
+        LEFT JOIN genres g ON fg.genre_id = g.genre_id
+        WHERE f.film_id IN (SELECT film_id FROM common_films)
+        ORDER BY (
+            SELECT COUNT(*)
+            FROM film_likes fl
+            WHERE fl.film_id = f.film_id
+        ) DESC, f.film_id, g.genre_id""";
 
     // SQL-запросы для работы с жанрами
     private static final String SQL_INSERT_GENRES = "INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)";
     private static final String SQL_DELETE_GENRES = "DELETE FROM film_genres WHERE film_id = ?";
     private static final String SQL_GET_FILM_GENRES = """
-            SELECT g.genre_id, g.name\s
-            FROM film_genres fg\s
-            JOIN genres g ON fg.genre_id = g.genre_id\s
+            SELECT g.genre_id, g.name
+            FROM film_genres fg
+            JOIN genres g ON fg.genre_id = g.genre_id
             WHERE fg.film_id = ?
             ORDER BY g.genre_id""";
     private static final String SQL_FIND_ALL_FILMS_WITH_GENRES = """
-            SELECT f.*,\s
-                   m.name AS mpa_name,\s
+            SELECT f.*,
+                   m.name AS mpa_name,
                    m.description AS mpa_description,
                    g.genre_id AS genre_id,
                    g.name AS genre_name
-            FROM films f\s
+            FROM films f
             LEFT JOIN mpa_ratings m ON f.mpa_id = m.mpa_id
             LEFT JOIN film_genres fg ON f.film_id = fg.film_id
             LEFT JOIN genres g ON fg.genre_id = g.genre_id
@@ -247,5 +269,32 @@ public class FilmDbStorage implements FilmStorage {
                 (rs, rowNum) -> new Genre(rs.getInt("genre_id"), rs.getString("name")),
                 filmId
         ));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Film> findCommonFilms(Long userId, Long friendId) {
+        Map<Long, Film> filmMap = new LinkedHashMap<>();
+
+        jdbcTemplate.query(SQL_FIND_COMMON_FILMS, rs -> {
+            Long filmId = rs.getLong("film_id");
+            Film film = filmMap.computeIfAbsent(filmId, id -> {
+                try {
+                    Film f = filmRowMapper.mapRow(rs, 0);
+                    f.setLikes(getLikes(filmId));
+                    return f;
+                } catch (SQLException e) {
+                    throw new DataAccessResourceFailureException("Не удалось преобразовать данные фильма", e);
+                }
+            });
+
+            int genreId = rs.getInt("genre_id");
+            if (!rs.wasNull()) {
+                Genre genre = new Genre(genreId, rs.getString("genre_name"));
+                film.getGenres().add(genre);
+            }
+        }, userId, friendId);
+
+        return new ArrayList<>(filmMap.values());
     }
 }
