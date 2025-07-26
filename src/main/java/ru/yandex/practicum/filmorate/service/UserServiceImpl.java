@@ -123,16 +123,25 @@ public class UserServiceImpl implements UserService {
         }
     }
 
-    @Override
     public List<FilmResponseDto> getRecommendations(Long userId) {
+        log.info("Запрос рекомендаций для пользователя {}", userId);
         if (!userStorage.exists(userId)) {
-            throw new NotFoundException("Пользователь с id " + userId + " не найден");
+            throw new NotFoundException("Пользователь не найден");
         }
 
-        List<Long> recommendedFilmIds = userStorage.getRecommendedFilmIds(userId);
-        return recommendedFilmIds.stream()
-                .map(filmStorage::findById)
-                .map(filmMapper::toDto)
+        List<Long> filmIds = userStorage.getRecommendedFilmIds(userId);
+        log.info("Найдены ID рекомендуемых фильмов: {}", filmIds);
+
+        return filmIds.stream()
+                .map(id -> {
+                    try {
+                        return filmMapper.toDto(filmStorage.findById(id));
+                    } catch (Exception e) {
+                        log.error("Ошибка маппинга фильма ID {}", id, e);
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
 }

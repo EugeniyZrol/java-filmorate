@@ -41,22 +41,24 @@ public class UserDbStorage implements UserStorage {
             "SELECT COUNT(*) FROM users WHERE user_id = ?";
     private static final String SQL_GET_RECOMMENDATIONS = """
     WITH similar_users AS (
-        SELECT fl2.user_id, COUNT(*) AS common_likes
+        SELECT fl2.user_id
         FROM film_likes fl1
-        JOIN film_likes fl2 ON fl1.film_id = fl2.film_id AND fl1.user_id != fl2.user_id
-        WHERE fl1.user_id = ?
+        JOIN film_likes fl2 ON fl1.film_id = fl2.film_id
+        WHERE fl1.user_id = ? 
+          AND fl2.user_id != ?
         GROUP BY fl2.user_id
-        ORDER BY common_likes DESC
+        ORDER BY COUNT(*) DESC
         LIMIT 1
-    ),
-    recommended_films AS (
-        SELECT fl.film_id
-        FROM film_likes fl
-        JOIN similar_users su ON fl.user_id = su.user_id
-        LEFT JOIN film_likes user_likes ON fl.film_id = user_likes.film_id AND user_likes.user_id = ?
-        WHERE user_likes.film_id IS NULL
     )
-    SELECT film_id FROM recommended_films
+    SELECT fl.film_id
+    FROM film_likes fl
+    JOIN similar_users su ON fl.user_id = su.user_id
+    LEFT JOIN film_likes user_likes ON 
+        fl.film_id = user_likes.film_id AND 
+        user_likes.user_id = ?
+    WHERE user_likes.film_id IS NULL
+    ORDER BY fl.film_id
+    LIMIT 10
     """;
 
     // Запросы для друзей
@@ -221,12 +223,19 @@ public class UserDbStorage implements UserStorage {
         ) > 0;
     }
 
-    @Override
     public List<Long> getRecommendedFilmIds(Long userId) {
-        return jdbcTemplate.queryForList(
-                SQL_GET_RECOMMENDATIONS,
-                Long.class,
-                userId, userId
-        );
+        log.info("Выполнение запроса рекомендаций для пользователя {}", userId);
+        try {
+            List<Long> result = jdbcTemplate.queryForList(
+                    SQL_GET_RECOMMENDATIONS,
+                    Long.class,
+                    userId, userId, userId
+            );
+            log.info("Результат запроса: {}", result); // Логируем сырые данные из БД
+            return result;
+        } catch (DataAccessException e) {
+            log.error("Ошибка при запросе рекомендаций", e);
+            return Collections.emptyList();
+        }
     }
 }
