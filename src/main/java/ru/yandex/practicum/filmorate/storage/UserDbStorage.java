@@ -2,7 +2,6 @@ package ru.yandex.practicum.filmorate.storage;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -44,7 +43,7 @@ public class UserDbStorage implements UserStorage {
         SELECT fl2.user_id
         FROM film_likes fl1
         JOIN film_likes fl2 ON fl1.film_id = fl2.film_id
-        WHERE fl1.user_id = ? 
+        WHERE fl1.user_id = ?
           AND fl2.user_id != ?
         GROUP BY fl2.user_id
         ORDER BY COUNT(*) DESC
@@ -53,8 +52,8 @@ public class UserDbStorage implements UserStorage {
     SELECT fl.film_id
     FROM film_likes fl
     JOIN similar_users su ON fl.user_id = su.user_id
-    LEFT JOIN film_likes user_likes ON 
-        fl.film_id = user_likes.film_id AND 
+    LEFT JOIN film_likes user_likes ON
+        fl.film_id = user_likes.film_id AND
         user_likes.user_id = ?
     WHERE user_likes.film_id IS NULL
     ORDER BY fl.film_id
