@@ -94,4 +94,10 @@ public class UserController {
         log.info("GET /users/{}/friends/common/{} - Поиск общих друзей", userId, otherId);
         return userService.getCommonFriends(userId, otherId);
     }
+
+    @GetMapping("/{userId}/recommendations")
+    public List<FilmResponseDto> getRecommendations(@PathVariable Long userId) {
+        log.info("GET /users/{}/recommendations - Получение рекомендаций", userId);
+        return userService.getRecommendations(userId);
+    }
 }

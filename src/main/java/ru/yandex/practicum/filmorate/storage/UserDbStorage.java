@@ -2,6 +2,7 @@ package ru.yandex.practicum.filmorate.storage;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -38,6 +39,25 @@ public class UserDbStorage implements UserStorage {
             "DELETE FROM users WHERE user_id = ?";
     private static final String SQL_CHECK_USER_EXISTS =
             "SELECT COUNT(*) FROM users WHERE user_id = ?";
+    private static final String SQL_GET_RECOMMENDATIONS = """
+    WITH similar_users AS (
+        SELECT fl2.user_id, COUNT(*) AS common_likes
+        FROM film_likes fl1
+        JOIN film_likes fl2 ON fl1.film_id = fl2.film_id AND fl1.user_id != fl2.user_id
+        WHERE fl1.user_id = ?
+        GROUP BY fl2.user_id
+        ORDER BY common_likes DESC
+        LIMIT 1
+    ),
+    recommended_films AS (
+        SELECT fl.film_id
+        FROM film_likes fl
+        JOIN similar_users su ON fl.user_id = su.user_id
+        LEFT JOIN film_likes user_likes ON fl.film_id = user_likes.film_id AND user_likes.user_id = ?
+        WHERE user_likes.film_id IS NULL
+    )
+    SELECT film_id FROM recommended_films
+    """;
 
     // Запросы для друзей
     private static final String SQL_ADD_FRIEND =
@@ -51,11 +71,6 @@ public class UserDbStorage implements UserStorage {
                     "WHERE user_id IN (SELECT user_id FROM users)";
     private static final String SQL_CHECK_FRIENDSHIP_EXISTS =
             "SELECT COUNT(*) FROM friendships WHERE user_id = ? AND friend_id = ?";
-    private static final String SQL_GET_COMMON_FRIENDS =
-            "SELECT f1.friend_id " +
-                    "FROM friendships f1 " +
-                    "JOIN friendships f2 ON f1.friend_id = f2.friend_id " +
-                    "WHERE f1.user_id = ? AND f2.user_id = ?";
 
     @Override
     @Transactional
@@ -181,20 +196,6 @@ public class UserDbStorage implements UserStorage {
     }
 
     @Override
-    public Set<Long> getCommonFriends(Long userId1, Long userId2) {
-        try {
-            return new HashSet<>(jdbcTemplate.queryForList(
-                    SQL_GET_COMMON_FRIENDS,
-                    Long.class,
-                    userId1,
-                    userId2
-            ));
-        } catch (EmptyResultDataAccessException e) {
-            return Collections.emptySet();
-        }
-    }
-
-    @Override
     public boolean exists(Long userId) {
         return jdbcTemplate.queryForObject(SQL_CHECK_USER_EXISTS, Integer.class, userId) > 0;
     }
@@ -218,5 +219,14 @@ public class UserDbStorage implements UserStorage {
                 Integer.class,
                 userId, friendId
         ) > 0;
+    }
+
+    @Override
+    public List<Long> getRecommendedFilmIds(Long userId) {
+        return jdbcTemplate.queryForList(
+                SQL_GET_RECOMMENDATIONS,
+                Long.class,
+                userId, userId
+        );
     }
 }
