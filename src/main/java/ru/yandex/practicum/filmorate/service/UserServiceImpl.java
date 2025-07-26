@@ -7,8 +7,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 import ru.yandex.practicum.filmorate.dto.*;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.mapper.FilmMapper;
 import ru.yandex.practicum.filmorate.mapper.UserMapper;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 import ru.yandex.practicum.filmorate.validation.OnCreate;
 import ru.yandex.practicum.filmorate.validation.OnUpdate;
@@ -22,9 +24,10 @@ import java.util.stream.Collectors;
 @Validated
 public class UserServiceImpl implements UserService {
     private final UserStorage userStorage;
+    private final FilmStorage filmStorage;
+    private final FilmMapper filmMapper;
 
     @Override
-
     public UserResponse create(@Validated(OnCreate.class) NewUserRequest request) {
         User user = UserMapper.mapFromCreateRequest(request);
         User createdUser = userStorage.create(user);
@@ -118,5 +121,27 @@ public class UserServiceImpl implements UserService {
         if (!userStorage.exists(userId1) || !userStorage.exists(userId2)) {
             throw new NotFoundException("Один или оба пользователя не найдены");
         }
+    }
+
+    public List<FilmResponseDto> getRecommendations(Long userId) {
+        log.info("Запрос рекомендаций для пользователя {}", userId);
+        if (!userStorage.exists(userId)) {
+            throw new NotFoundException("Пользователь не найден");
+        }
+
+        List<Long> filmIds = userStorage.getRecommendedFilmIds(userId);
+        log.info("Найдены ID рекомендуемых фильмов: {}", filmIds);
+
+        return filmIds.stream()
+                .map(id -> {
+                    try {
+                        return filmMapper.toDto(filmStorage.findById(id));
+                    } catch (Exception e) {
+                        log.error("Ошибка маппинга фильма ID {}", id, e);
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 }
