@@ -16,7 +16,8 @@ public class FilmResponseDto {
     private String description;
     private LocalDate releaseDate;
     private int duration;
-    private MpaDto mpa;          // Полный объект вместо mpaId
-    private List<GenreDto> genres; // Список объектов вместо genreIds
+    private MpaDto mpa;
+    private List<GenreDto> genres;
     private int likesCount;
+    private List<DirectorDto> directors;
 }
