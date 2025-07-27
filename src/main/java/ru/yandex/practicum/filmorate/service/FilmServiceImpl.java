@@ -100,7 +100,7 @@ public class FilmServiceImpl implements FilmService {
         }
     }
 
-    private void setDirectorsForFilm(FilmRequestDto dto, Film film){
+    private void setDirectorsForFilm(FilmRequestDto dto, Film film) {
         if (dto.getDirectors() != null && !dto.getDirectors().isEmpty()) {
             List<Director> directors = dto.getDirectors().stream()
                     .filter(Objects::nonNull)
@@ -233,11 +233,9 @@ public class FilmServiceImpl implements FilmService {
     public List<FilmResponseDto> getTopFilms(int count, Integer genreId, Integer year) {
         log.debug("Получение топ-{} фильмов по жанру {} и году {}", count, genreId, year);
         try {
-            List<FilmResponseDto> topFilms = filmStorage.findTopFilms(count, genreId, year).stream()
+            return filmStorage.findTopFilms(count, genreId, year).stream()
                     .map(filmMapper::toDto)
                     .collect(Collectors.toList());
-            log.info("Возвращено {} топовых фильмов", topFilms.size());
-            return topFilms;
         } catch (DataAccessException e) {
             log.error("Ошибка при получении топовых фильмов", e);
             throw new DataRetrievalFailureException("Не удалось получить топовые фильмы", e);
