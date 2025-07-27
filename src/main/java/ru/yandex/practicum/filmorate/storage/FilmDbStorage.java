@@ -55,43 +55,43 @@ public class FilmDbStorage implements FilmStorage {
 
     // SQL-запросы для поиска фильмов
     private static final String SQL_FIND_TOP_FILMS = """
-        SELECT f.film_id
-        FROM films f
-        LEFT JOIN film_genres fg ON f.film_id = fg.film_id
-        LEFT JOIN film_likes fl ON f.film_id = fl.film_id
-        WHERE (? IS NULL OR fg.genre_id = ?)
-        AND (? IS NULL OR EXTRACT(YEAR FROM f.release_date) = ?)
-        GROUP BY f.film_id
-        ORDER BY COUNT(fl.user_id) DESC
-        LIMIT ?""";
+            SELECT f.film_id
+            FROM films f
+            LEFT JOIN film_genres fg ON f.film_id = fg.film_id
+            LEFT JOIN film_likes fl ON f.film_id = fl.film_id
+            WHERE (? IS NULL OR fg.genre_id = ?)
+            AND (? IS NULL OR EXTRACT(YEAR FROM f.release_date) = ?)
+            GROUP BY f.film_id
+            ORDER BY COUNT(fl.user_id) DESC
+            LIMIT ?""";
 
     private static final String SQL_FIND_COMMON_FILMS = """
-        WITH common_films AS (
-            SELECT fl1.film_id
-            FROM film_likes fl1
-            JOIN film_likes fl2 ON fl1.film_id = fl2.film_id
-            WHERE fl1.user_id = ? AND fl2.user_id = ?
-        )
-        SELECT film_id FROM common_films""";
+            WITH common_films AS (
+                SELECT fl1.film_id
+                FROM film_likes fl1
+                JOIN film_likes fl2 ON fl1.film_id = fl2.film_id
+                WHERE fl1.user_id = ? AND fl2.user_id = ?
+            )
+            SELECT film_id FROM common_films""";
 
     private static final String SQL_FIND_FILMS_BY_DIRECTOR = """
-    SELECT fd.film_id
-    FROM film_directors fd
-    JOIN films f ON fd.film_id = f.film_id
-    WHERE fd.director_id = ?
-    ORDER BY
-        CASE WHEN ? = 'year' THEN f.release_date END ASC,
-        (SELECT COUNT(*) FROM film_likes WHERE film_id = fd.film_id) DESC""";
+            SELECT fd.film_id
+            FROM film_directors fd
+            JOIN films f ON fd.film_id = f.film_id
+            WHERE fd.director_id = ?
+            ORDER BY
+                CASE WHEN ? = 'year' THEN f.release_date END ASC,
+                (SELECT COUNT(*) FROM film_likes WHERE film_id = fd.film_id) DESC""";
 
     //Для работы с режиссёрами
     private static final String SQL_INSERT_DIRECTORS = "INSERT INTO film_directors (film_id, director_id) VALUES (?, ?)";
     private static final String SQL_DELETE_DIRECTORS = "DELETE FROM film_directors WHERE film_id = ?";
     private static final String SQL_GET_FILM_DIRECTORS = """
-        SELECT d.director_id, d.name
-        FROM film_directors fd
-        JOIN directors d ON fd.director_id = d.director_id
-        WHERE fd.film_id = ?
-        ORDER BY d.director_id""";
+            SELECT d.director_id, d.name
+            FROM film_directors fd
+            JOIN directors d ON fd.director_id = d.director_id
+            WHERE fd.film_id = ?
+            ORDER BY d.director_id""";
 
     @Override
     public Film create(Film film) {

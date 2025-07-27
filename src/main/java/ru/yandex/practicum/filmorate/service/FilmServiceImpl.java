@@ -41,11 +41,10 @@ public class FilmServiceImpl implements FilmService {
     @Override
     public Collection<FilmResponseDto> findAll() {
         log.debug("Получение списка всех фильмов");
-        Collection<FilmResponseDto> films = filmStorage.findAll().stream()
+
+        return filmStorage.findAll().stream()
                 .map(filmMapper::toDto)
                 .collect(Collectors.toList());
-        log.info("Возвращено {} фильмов", films.size());
-        return films;
     }
 
     @Override
