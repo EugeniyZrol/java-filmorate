@@ -15,6 +15,7 @@ import ru.yandex.practicum.filmorate.dto.MpaDto;
 import ru.yandex.practicum.filmorate.exception.ConditionsNotMetException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.mapper.FilmMapper;
+import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.MpaRating;
@@ -35,6 +36,7 @@ public class FilmServiceImpl implements FilmService {
     private final FilmMapper filmMapper;
     private final MpaService mpaService;
     private final GenreService genreService;
+    private final DirectorService directorService;
 
     @Override
     public Collection<FilmResponseDto> findAll() {
@@ -98,6 +100,19 @@ public class FilmServiceImpl implements FilmService {
         }
     }
 
+    private void setDirectorsForFilm(FilmRequestDto dto, Film film){
+        if (dto.getDirectors() != null && !dto.getDirectors().isEmpty()) {
+            List<Director> directors = dto.getDirectors().stream()
+                    .filter(Objects::nonNull)
+                    .map(directorDto -> new Director(directorDto.getId(), directorDto.getName()))
+                    .distinct()
+                    .collect(Collectors.toList());
+            film.setDirectors(directors);
+        } else {
+            film.setDirectors(Collections.emptyList());
+        }
+    }
+
     private void updateFilmFromDto(FilmRequestDto dto, Film film) {
         film.setName(dto.getName());
         film.setDescription(dto.getDescription());
@@ -105,6 +120,7 @@ public class FilmServiceImpl implements FilmService {
         film.setDuration(dto.getDuration());
         setMpaForFilm(dto, film);
         setGenresForFilm(dto, film);
+        setDirectorsForFilm(dto, film); // Добавляем отдельный метод для режиссеров
     }
 
     private void enrichFilmWithRelations(Film film) {
@@ -244,5 +260,13 @@ public class FilmServiceImpl implements FilmService {
 
         log.info("Найдено {} общих фильмов", result.size());
         return result;
+    }
+
+    @Override
+    public List<FilmResponseDto> getFilmsByDirector(Long directorId, String sortBy) {
+        directorService.getById(directorId);
+        return filmStorage.findFilmsByDirector(directorId, sortBy).stream()
+                .map(filmMapper::toDto)
+                .collect(Collectors.toList());
     }
 }
