@@ -30,4 +30,6 @@ public interface FilmStorage {
     List<Film> findFilmsByDirector(Long directorId, String sortBy);
 
     List<Film> searchFilms(String query, boolean searchByTitle, boolean searchByDirector);
+
+    boolean exists(Long filmId);
 }
