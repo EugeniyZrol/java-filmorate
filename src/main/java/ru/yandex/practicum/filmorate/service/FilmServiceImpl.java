@@ -268,7 +268,7 @@ public class FilmServiceImpl implements FilmService {
     }
 
     @Override
-    public List<FilmResponseDto> searchFilms(String query, List<String> by){
+    public List<FilmResponseDto> searchFilms(String query, List<String> by) {
         log.debug("Поиск фильмов по запросу '{}' в полях: {}", query, by);
         boolean searchByTitle = by.contains("title");
         boolean searchByDirector = by.contains("director");
