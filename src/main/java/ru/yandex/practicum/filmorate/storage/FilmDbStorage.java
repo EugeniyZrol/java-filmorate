@@ -82,6 +82,15 @@ public class FilmDbStorage implements FilmStorage {
             ORDER BY
                 CASE WHEN ? = 'year' THEN f.release_date END ASC,
                 (SELECT COUNT(*) FROM film_likes WHERE film_id = fd.film_id) DESC""";
+    private static final String SQL_SEARCH_FILMS = """
+        SELECT DISTINCT f.film_id,
+               (SELECT COUNT(*) FROM film_likes WHERE film_id = f.film_id) AS likes_count
+        FROM films f
+        LEFT JOIN film_directors fd ON f.film_id = fd.film_id
+        LEFT JOIN directors d ON fd.director_id = d.director_id
+        WHERE (? AND LOWER(f.name) LIKE ?)
+           OR (? AND LOWER(d.name) LIKE ?)
+        ORDER BY likes_count DESC""";
 
     //Для работы с режиссёрами
     private static final String SQL_INSERT_DIRECTORS = "INSERT INTO film_directors (film_id, director_id) VALUES (?, ?)";
@@ -332,5 +341,24 @@ public class FilmDbStorage implements FilmStorage {
         return jdbcTemplate.query(SQL_GET_FILM_DIRECTORS,
                 (rs, rowNum) -> new Director(rs.getLong("director_id"), rs.getString("name")),
                 filmId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Film> searchFilms(String query, boolean searchByTitle, boolean searchByDirector) {
+        String searchPattern = "%" + query + "%";
+
+        List<Long> filmIds = jdbcTemplate.query(
+                SQL_SEARCH_FILMS,
+                (rs, rowNum) -> rs.getLong("film_id"),
+                searchByTitle,
+                searchPattern,
+                searchByDirector,
+                searchPattern
+        );
+
+        return filmIds.stream()
+                .map(this::findById)
+                .collect(Collectors.toList());
     }
 }

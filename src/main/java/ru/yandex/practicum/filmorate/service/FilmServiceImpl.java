@@ -266,4 +266,20 @@ public class FilmServiceImpl implements FilmService {
                 .map(filmMapper::toDto)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public List<FilmResponseDto> searchFilms(String query, List<String> by){
+        log.debug("Поиск фильмов по запросу '{}' в полях: {}", query, by);
+        boolean searchByTitle = by.contains("title");
+        boolean searchByDirector = by.contains("director");
+
+        if (!searchByTitle && !searchByDirector) {
+            throw new IllegalArgumentException("Параметр 'by' должен содержать 'title' или 'director'");
+        }
+
+        List<Film> films = filmStorage.searchFilms(query.toLowerCase(), searchByTitle, searchByDirector);
+        return films.stream()
+                .map(filmMapper::toDto)
+                .collect(Collectors.toList());
+    }
 }
