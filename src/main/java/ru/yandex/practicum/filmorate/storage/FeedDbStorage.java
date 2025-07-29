@@ -17,9 +17,9 @@ public class FeedDbStorage implements FeedStorage {
     private final JdbcTemplate jdbcTemplate;
     private final UserFeedRowMapper userFeedRowMapper;
 
-    private final static String SQL_CREATE_FEED = "INSERT INTO user_feeds (user_id, entity_id, event_type, operation, timestamp) " +
+    private static final String SQL_CREATE_FEED = "INSERT INTO user_feeds (user_id, entity_id, event_type, operation, timestamp) " +
             "VALUES (?, ?, ?, ?, ?)";
-    private final static String SQL_FIND_BY_USER_ID = "SELECT * FROM user_feeds WHERE user_id = ? ORDER BY timestamp ASC";
+    private static final String SQL_FIND_BY_USER_ID = "SELECT * FROM user_feeds WHERE user_id = ? ORDER BY timestamp ASC";
 
     @Override
     public UserFeed create(UserFeed feed) {
