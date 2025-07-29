@@ -6,5 +6,6 @@ import java.util.List;
 
 public interface FeedStorage {
     UserFeed create(UserFeed feed);
+
     List<UserFeed> findByUserId(Long userId);
 }
