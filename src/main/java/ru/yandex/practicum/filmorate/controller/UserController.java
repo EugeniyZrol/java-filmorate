@@ -100,4 +100,10 @@ public class UserController {
         log.info("GET /users/{}/recommendations - Получение рекомендаций", userId);
         return userService.getRecommendations(userId);
     }
+
+    @GetMapping("/{userId}/feed")
+    public List<UserFeedDto> getUserFeed(@PathVariable Long userId) {
+        log.info("GET /users/{}/feed - Получение ленты событий пользователя", userId);
+        return userService.getUserFeed(userId);
+    }
 }
