@@ -15,10 +15,8 @@ import ru.yandex.practicum.filmorate.dto.MpaDto;
 import ru.yandex.practicum.filmorate.exception.ConditionsNotMetException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.mapper.FilmMapper;
-import ru.yandex.practicum.filmorate.model.Director;
-import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.Genre;
-import ru.yandex.practicum.filmorate.model.MpaRating;
+import ru.yandex.practicum.filmorate.model.*;
+import ru.yandex.practicum.filmorate.storage.FeedStorage;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 import ru.yandex.practicum.filmorate.validation.OnCreate;
@@ -37,6 +35,7 @@ public class FilmServiceImpl implements FilmService {
     private final MpaService mpaService;
     private final GenreService genreService;
     private final DirectorService directorService;
+    private final FeedStorage feedStorage;
 
     @Override
     public Collection<FilmResponseDto> findAll() {
@@ -119,7 +118,7 @@ public class FilmServiceImpl implements FilmService {
         film.setDuration(dto.getDuration());
         setMpaForFilm(dto, film);
         setGenresForFilm(dto, film);
-        setDirectorsForFilm(dto, film); // Добавляем отдельный метод для режиссеров
+        setDirectorsForFilm(dto, film);
     }
 
     private void enrichFilmWithRelations(Film film) {
@@ -195,6 +194,14 @@ public class FilmServiceImpl implements FilmService {
         try {
             filmStorage.addLike(filmId, userId);
             log.info("Лайк от пользователя {} фильму {} успешно добавлен", userId, filmId);
+
+            UserFeed feed = new UserFeed();
+            feed.setUserId(userId);
+            feed.setEntityId(filmId);
+            feed.setEventType(UserFeed.EventType.LIKE);
+            feed.setOperation(UserFeed.Operation.ADD);
+            feed.setTimestamp(System.currentTimeMillis());
+            feedStorage.create(feed);
         } catch (DuplicateKeyException e) {
             log.warn("Пользователь {} уже ставил лайк фильму {}", userId, filmId);
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Пользователь уже ставил лайк");
@@ -218,6 +225,13 @@ public class FilmServiceImpl implements FilmService {
             filmStorage.removeLike(filmId, userId);
             log.info("Удален лайк фильму {} от пользователя {}", filmId, userId);
 
+            UserFeed feed = new UserFeed();
+            feed.setUserId(userId);
+            feed.setEntityId(filmId);
+            feed.setEventType(UserFeed.EventType.LIKE);
+            feed.setOperation(UserFeed.Operation.REMOVE);
+            feed.setTimestamp(System.currentTimeMillis());
+            feedStorage.create(feed);
         } catch (EmptyResultDataAccessException e) {
             log.error("Лайк не найден при удалении: film={}, user={}", filmId, userId, e);
             throw new ConditionsNotMetException("Лайк не найден");

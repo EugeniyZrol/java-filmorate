@@ -31,4 +31,6 @@ public interface UserService {
     List<UserResponse> getCommonFriends(Long userId1, Long userId2);
 
     List<FilmResponseDto> getRecommendations(Long userId);
+
+    List<UserFeedDto> getUserFeed(Long userId);
 }

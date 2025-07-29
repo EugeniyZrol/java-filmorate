@@ -10,6 +10,8 @@ import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.mapper.FilmMapper;
 import ru.yandex.practicum.filmorate.mapper.UserMapper;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.model.UserFeed;
+import ru.yandex.practicum.filmorate.storage.FeedStorage;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 import ru.yandex.practicum.filmorate.validation.OnCreate;
@@ -26,6 +28,8 @@ public class UserServiceImpl implements UserService {
     private final UserStorage userStorage;
     private final FilmStorage filmStorage;
     private final FilmMapper filmMapper;
+    private final FeedStorage feedStorage;
+    private final FeedService feedService;
 
     @Override
     public UserResponse create(@Validated(OnCreate.class) NewUserRequest request) {
@@ -69,12 +73,28 @@ public class UserServiceImpl implements UserService {
     public void addFriend(Long userId, Long friendId) {
         validateFriendship(userId, friendId);
         userStorage.addFriend(userId, friendId);
+
+        UserFeed feed = new UserFeed();
+        feed.setUserId(userId);
+        feed.setEntityId(friendId);
+        feed.setEventType(UserFeed.EventType.FRIEND);
+        feed.setOperation(UserFeed.Operation.ADD);
+        feed.setTimestamp(System.currentTimeMillis());
+        feedStorage.create(feed);
     }
 
     @Override
     public void removeFriend(Long userId, Long friendId) {
         validateUsersExist(userId, friendId);
         userStorage.removeFriend(userId, friendId);
+
+        UserFeed feed = new UserFeed();
+        feed.setUserId(userId);
+        feed.setEntityId(friendId);
+        feed.setEventType(UserFeed.EventType.FRIEND);
+        feed.setOperation(UserFeed.Operation.REMOVE);
+        feed.setTimestamp(System.currentTimeMillis());
+        feedStorage.create(feed);
     }
 
     @Override
@@ -143,5 +163,10 @@ public class UserServiceImpl implements UserService {
                 })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<UserFeedDto> getUserFeed(Long userId) {
+        return feedService.getUserFeed(userId);
     }
 }
